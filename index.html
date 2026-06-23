@@ -708,6 +708,10 @@
 
     createApp({
       setup() {
+          const renderMarkdown = (text) => {
+            return window.marked ? window.marked.parse(text || '') : text;
+          };
+        const systemPrompt = '...';
         const activeWorkspace = ref([]);
         const activePage = ref('dashboard');
         const darkMode = ref(false);
@@ -1110,29 +1114,6 @@
             return `[DOCUMENT ID: ${d.id}, TITLE: ${d.title}, TEXT: ${content}]`;
           }).join('\n\n');
 
-          const renderMarkdown = (text) => {
-            // Check if marked is available globally, otherwise return raw text
-            return window.marked ? window.marked.parse(text || '') : text;
-          };
-          
-          // ... inside the return block at the bottom of setup:
-          return {
-            // ... (all your existing variables)
-            renderMarkdown, // <--- ADD THIS LINE HERE
-          };
-
-          const systemPrompt = `You are arxivLLM, a master in explaining research papers. Your task is to answer user queries using the provided workspace documents or general knowledge if the query is unrelated.
-
-Formatting Rules:
-1. Spacing: Always use double newlines between paragraphs and sections.
-2. Citations: Embed citations directly inline at the end of the relevant sentence or clause. Format: [Source Name](ID). Do not list citations at the bottom of the response.
-3. Bolding: Use bold only for section headers (###) or specific technical keywords. Do not bold entire paragraphs or full sentences.
-4. Tone: Keep the tone practical, realistic, direct, and academic. Do not include slogans or motivational filler.
-5. Structure: Use Markdown headers (###) to organize content clearly.
-
-Active Workspace Documents:
-${docsCombinedContext || 'No documents available in the current context.'}`;
-
           const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.value.trim()}`;
           const payload = {
             contents: [{ parts: [{ text: queryText }] }],
@@ -1242,7 +1223,8 @@ ${docsCombinedContext || 'No documents available in the current context.'}`;
           applySuggestedPrompt,
           sendChatMessage,
           clearChat,
-          toggleDarkMode
+          toggleDarkMode,
+          renderMarkdown
         };
       }
     }).mount('#app');
