@@ -1064,6 +1064,19 @@
           });
         };
 
+        const processCitations = (text, docs) => {
+          return text.replace(/\[(\d+)\]/g, (match, index) => {
+            const docIndex = parseInt(index) - 1;
+            const doc = docs[docIndex];
+            
+            if (doc) {
+              // Returns a clickable span that triggers your viewer
+              return `<span class="citation-link" onclick="window.openDoc('${doc.id}')" style="color: blue; cursor: pointer; text-decoration: underline;">[${doc.title}]</span>`;
+            }
+            return match; // Return original if doc not found
+          });
+        };
+
         const sendChatMessage = async () => {
           if (!userMessage.value.trim()) return;
           const text = userMessage.value;
@@ -1127,7 +1140,7 @@
         
         Formatting Rules:
         1. Spacing: Always use double newlines between paragraphs and sections.
-        2. Citations: Embed citations directly inline at the end of the relevant sentence or clause. Format: [Source Name](#ID). Do not list citations at the bottom of the response.
+        2. Citations: At the end of relevant sentences, add a citation marker like [1], [2], etc., corresponding to the document order provided below....`;
         3. Bolding: Use bold only for section headers (###) or specific technical keywords. Do not bold entire paragraphs or full sentences.
         4. Tone: Keep the tone practical, realistic, direct, and academic. Do not include slogans or motivational filler.
         5. Structure: Use Markdown headers (###) to organize content clearly.
@@ -1142,6 +1155,14 @@
           const payload = {
             contents: [{ parts: [{ text: queryText }] }],
             systemInstruction: { parts: [{ text: currentSystemPrompt }] }
+          };
+          const responseText = response?.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
+          const linkedText = processCitations(responseText, contextDocs);
+            return {
+              text: linkedText, // Now contains your clickable citation spans
+              citations: [], 
+              webBadges: []
+            };
           };
         
           // ... (rest of your fetch logic)
