@@ -795,18 +795,14 @@
   searchResults.value = [];
 
   try {
-    const q = encodeURIComponent(searchQuery.value);
-    const targetUrl = `https://export.arxiv.org/api/query?search_query=all:${q}&start=0&max_results=5`;
+    // Calling YOUR backend proxy, not arXiv directly
+    const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.value)}`);
     
-    // Using allorigins.win
-    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
-    if (!res.ok) throw new Error("Network response was not ok");
-    
-    const data = await res.json(); // AllOrigins returns JSON
-    const xmlString = data.contents; // The actual arXiv XML
-    
+    if (!res.ok) throw new Error("Proxy error");
+
+    const str = await res.text();
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+    const xmlDoc = parser.parseFromString(str, "text/xml");
     const entries = xmlDoc.getElementsByTagName("entry");
 
     const results = [];
