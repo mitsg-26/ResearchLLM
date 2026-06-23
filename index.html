@@ -1083,16 +1083,17 @@
             return `[DOCUMENT ID: ${d.id}, TITLE: ${d.title}, TEXT: ${content}]`;
           }).join('\n\n');
 
-          const systemPrompt = `You are arxivLLM, a master in explaining research papers. You explain complex concepts in simple terms or adjust to the user prompt. You are agentic. Your primary task is to answer based on the provided document workspace. However, if the user asks a general question or something unrelated to the documents, use your general knowledge to answer them anyway. Keep your tone direct and practical. Avoid slogans and motivational talk.
+          const systemPrompt = `You are arxivLLM, a master in explaining research papers. Your task is to answer user queries using the provided workspace documents or general knowledge if the query is unrelated.
+
+Formatting Rules:
+1. Spacing: Always use double newlines between paragraphs and sections.
+2. Citations: Embed citations directly inline at the end of the relevant sentence or clause. Format: [Source Name](ID). Do not list citations at the bottom of the response.
+3. Bolding: Use bold only for section headers (###) or specific technical keywords. Do not bold entire paragraphs or full sentences.
+4. Tone: Keep the tone practical, realistic, direct, and academic. Do not include slogans or motivational filler.
+5. Structure: Use Markdown headers (###) to organize content clearly.
 
 Active Workspace Documents:
-${docsCombinedContext || 'No documents available in the current context.'}
-
-Rules:
-1. Answer based strictly on the documents if relevant. Provide citations if doing so.
-2. If the query is unrelated, answer accurately using your general knowledge as arxivLLM.
-3. Keep the tone practical, realistic, direct, and academic.
-4. Do NOT include system metadata variables directly in the raw response text.`;
+${docsCombinedContext || 'No documents available in the current context.'}`;
 
           const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.value.trim()}`;
           const payload = {
