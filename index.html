@@ -18,7 +18,9 @@
   <!-- PDF.js for text extraction -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
@@ -1385,6 +1387,7 @@
         const draggingNodeId = ref(null);
         const dragOffset = ref({ x: 0, y: 0 });
         const mindmapContainer = ref(null);
+        const newConceptLabel = ref('');
 
         const persistMindmap = () => {
           localStorage.setItem('sq-mindmap-nodes', JSON.stringify(mindmapNodes.value));
@@ -1589,6 +1592,10 @@
           }
         };
 
+        const setTimerMode = (mode) => {
+          timerMode.value = mode;
+        };
+
         watch(timerMode, (newMode) => {
           resetTimer();
         });
@@ -1664,6 +1671,10 @@
             document.documentElement.classList.add('dark');
           }
           
+          if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          }
+          
           loadPersistedData();
           lucide.createIcons();
         });
@@ -1711,6 +1722,7 @@
           mindmapNodes,
           selectedNode,
           newConceptLabel,
+          mindmapContainer,
           selectMindmapNode,
           toggleNodeExpand,
           handlePointerDown,
@@ -1723,6 +1735,7 @@
           addMindmapNode,
           pruneMindmapNode,
           resetMindmap,
+          setTimerMode,
           timerMode,
           timerMinutes,
           timerSeconds,
