@@ -20,6 +20,7 @@
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
   <script>
     tailwind.config = {
@@ -72,6 +73,33 @@
       0%, 100% { box-shadow: 0 0 4px #badbe5, 0 0 12px rgba(186, 219, 229, 0.6); opacity: 0.8; }
       50% { box-shadow: 0 0 12px #badbe5, 0 0 24px rgba(186, 219, 229, 0.9); opacity: 1; }
     }
+    .markdown-content h3 {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: inherit;
+}
+
+.markdown-content p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.markdown-content strong {
+  font-weight: 700;
+}
+
+.markdown-content ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.markdown-content a {
+  color: #3b82f6; /* Blue links */
+  text-decoration: underline;
+}
   </style>
 </head>
 <body class="h-full bg-cream text-slate-800 dark:bg-slateDark dark:text-gray-200 transition-colors duration-200 font-sans antialiased overflow-hidden">
@@ -435,7 +463,7 @@
                 ]"
                 class="max-w-[80%] rounded-2xl p-4 text-xs leading-relaxed flex flex-col gap-2">
                 
-                <p class="whitespace-pre-wrap">{{ msg.text }}</p>
+                <div class="markdown-content" v-html="marked.parse(msg.text)"></div>
 
                 <!-- Grounding and citation pill list -->
                 <div v-if="msg.citations && msg.citations.length > 0" class="mt-2 pt-2 border-t border-gray-100 dark:border-neutral-800/80 flex flex-col gap-1.5">
