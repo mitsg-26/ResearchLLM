@@ -754,10 +754,12 @@
         };
 
         const processIncomingFiles = async (files) => {
-          for (let file of files) {
-            const nameLower = file.name.toLowerCase();
-            const url = URL.createObjectURL(file);
-            let extractedText = '';
+          for(let i=1; i<=Math.min(pdf.numPages, 10); i++) {
+             const page = await pdf.getPage(i);
+             const content = await page.getTextContent();
+             // Add a marker for the AI to see:
+             text += `\n[PAGE ${i}]\n` + content.items.map(item => item.str).join(' ') + '\n';
+          }
 
             if (nameLower.endsWith('.pdf')) {
                try {
