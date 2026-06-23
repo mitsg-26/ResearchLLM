@@ -744,6 +744,14 @@
           processIncomingFiles(files);
         };
 
+        const openDocumentViewer = (id) => {
+          const doc = activeWorkspace.value.find(d => d.id === id);
+          if (doc) {
+            activeDocument.value = doc;
+            activePage.value = 'viewer'; // Ensure this matches your page identifier
+          }
+        };
+
         const processIncomingFiles = async (files) => {
           for (let file of files) {
             const nameLower = file.name.toLowerCase();
@@ -1118,7 +1126,7 @@
         
         Formatting Rules:
         1. Spacing: Always use double newlines between paragraphs and sections.
-        2. Citations: Embed citations directly inline at the end of the relevant sentence or clause. Format: [Source Name](ID). Do not list citations at the bottom of the response.
+        2. Citations: Embed citations directly inline at the end of the relevant sentence or clause. Format: [Source Name](#ID). Do not list citations at the bottom of the response.
         3. Bolding: Use bold only for section headers (###) or specific technical keywords. Do not bold entire paragraphs or full sentences.
         4. Tone: Keep the tone practical, realistic, direct, and academic. Do not include slogans or motivational filler.
         5. Structure: Use Markdown headers (###) to organize content clearly.
@@ -1189,6 +1197,17 @@
 
         onMounted(() => {
           lucide.createIcons();
+        
+          const resultContainer = document.querySelector('.result-display-container');
+          if (resultContainer) {
+            resultContainer.addEventListener('click', (e) => {
+              if (e.target.tagName === 'A' && e.target.getAttribute('href')?.startsWith('#')) {
+                e.preventDefault();
+                const docId = e.target.getAttribute('href').substring(1);
+                openDocumentViewer(docId);
+              }
+            });
+          }
         });
 
         return {
