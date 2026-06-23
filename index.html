@@ -708,36 +708,28 @@
     const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
 
     createApp({
-          setup() {
-        const renderMarkdown = (text) => {
+      setup() {
+          const renderMarkdown = (text) => {
             return window.marked ? window.marked.parse(text || '') : text;
-        };
-    
+          };
         const activeWorkspace = ref([]);
         const activePage = ref('dashboard');
         const darkMode = ref(false);
         const dragOver = ref(false);
         const fileInput = ref(null);
+        
         const activeDocument = ref(null);
         const chatContextMode = ref('all');
         const isSearching = ref(false);
-        const searchQuery = ref('');
-        const searchResults = ref([]);
-        const userMessage = ref('');
-        const isBotThinking = ref(false);
-        const chatContainer = ref(null);
-        const chatMessages = ref([{
-            id: 1,
-            role: 'bot',
-            text: 'CosmosNote initialized. I am arxivLLM. Upload files or input queries.',
-            citations: []
-        }]);
-    
+
         const apiKey = ref(localStorage.getItem('cosmos-api-key') || '');
         watch(apiKey, (val) => {
-            localStorage.setItem('cosmos-api-key', val);
+        localStorage.setItem('cosmos-api-key', val);
+        console.log("Key saved to storage:", val); // Check your console (F12) to see if this triggers
         });
-        const isLiveAPI = computed(() => apiKey.value.trim().length > 15);
+        const isLiveAPI = computed(() => {
+        return apiKey.value.trim().length > 15; 
+        });
 
         const searchQuery = ref('');
         const searchResults = ref([]);
@@ -762,109 +754,116 @@
         };
 
         const processIncomingFiles = async (files) => {
-                for (const file of files) {
-                    let extractedText = '';
-                    const nameLower = file.name.toLowerCase();
-        
-                    try {
-                        if (nameLower.endsWith('.pdf')) {
-                            const arrayBuffer = await file.arrayBuffer();
-                            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                            let text = '';
-                            for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
-                                const page = await pdf.getPage(i);
-                                const content = await page.getTextContent();
-                                text += content.items.map(item => item.str).join(' ') + '\n';
-                            }
-                            extractedText = text;
-                        } else if (nameLower.endsWith('.txt')) {
-                            extractedText = await file.text();
-                        } else {
-                            extractedText = "Unsupported file format.";
-                        }
-        
-                        const newDoc = {
-                            id: `${file.name}-${Math.random().toString(36).substr(2, 4)}`,
-                            title: file.name.replace(/\.[^/.]+$/, ""),
-                            authors: 'Local Upload',
-                            abstract: extractedText.substring(0, 400) + '...',
-                            fullText: extractedText,
-                            size: (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-                        };
-                        activeWorkspace.value.unshift(newDoc);
-                        if (!activeDocument.value) activeDocument.value = newDoc;
-                    } catch (e) {
-                        console.error("File processing error", e);
-                    }
-                }
-                nextTick(() => lucide.createIcons());
-            };
-        
-            const handleFileDrop = (e) => {
-                dragOver.value = false;
-                processIncomingFiles(e.dataTransfer.files);
-            };
-        
-            const handleFileSelect = (e) => processIncomingFiles(e.target.files);
-        
-            const openDocumentViewer = (id) => {
-                const doc = activeWorkspace.value.find(d => d.id === id);
-                if (doc) {
-                    activeDocument.value = doc;
-                    activePage.value = 'viewer';
-                }
-            };
-        
-            const removeFromWorkspace = (id) => {
-                activeWorkspace.value = activeWorkspace.value.filter(d => d.id !== id);
-                if (activeDocument.value?.id === id) {
-                    activeDocument.value = activeWorkspace.value.length > 0 ? activeWorkspace.value[0] : null;
-                }
-            };
-        
-            const isInWorkspace = (id) => activeWorkspace.value.some(d => d.id === id);
-        
-            const injectIntoWorkspace = (result) => {
-                if (!isInWorkspace(result.id)) {
-                    const newDoc = {
-                        id: result.id,
-                        title: result.title,
-                        authors: result.authors,
-                        abstract: result.abstract,
-                        fullText: result.abstract,
-                        size: 'External link',
-                        url: result.url
-                    };
-                    activeWorkspace.value.unshift(newDoc);
-                    if (!activeDocument.value) activeDocument.value = newDoc;
-                }
-                nextTick(() => lucide.createIcons());
-            };
+          for (let file of files) {
+            const nameLower = file.name.toLowerCase();
+            const url = URL.createObjectURL(file);
+            let extractedText = '';
 
-            const performSearch = async () => {
-                if (!searchQuery.value.trim()) return;
-                isSearching.value = true;
-                searchResults.value = [];
-                try {
-                    const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.value)}`);
-                    if (!res.ok) throw new Error("Proxy error");
-                    const str = await res.text();
-                    const xmlDoc = new DOMParser().parseFromString(str, "text/xml");
-                    const entries = xmlDoc.getElementsByTagName("entry");
-                    searchResults.value = Array.from(entries).map(entry => ({
-                        id: entry.getElementsByTagName("id")[0].textContent.split('/').pop(),
-                        title: entry.getElementsByTagName("title")[0].textContent.trim(),
-                        authors: Array.from(entry.getElementsByTagName("author")).map(a => a.getElementsByTagName("name")[0].textContent).join(', '),
-                        abstract: entry.getElementsByTagName("summary")[0].textContent.trim(),
-                        url: entry.getElementsByTagName("id")[0].textContent
-                    }));
-                } catch (e) {
-                    console.error("Search failed:", e);
-                } finally {
-                    isSearching.value = false;
-                    nextTick(() => lucide.createIcons());
-                }
+            if (nameLower.endsWith('.pdf')) {
+               try {
+                 const arrayBuffer = await file.arrayBuffer();
+                 const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                 let text = '';
+                 for(let i=1; i<=Math.min(pdf.numPages, 10); i++) {
+                   const page = await pdf.getPage(i);
+                   const content = await page.getTextContent();
+                   text += content.items.map(item => item.str).join(' ') + '\n';
+                 }
+                 extractedText = text;
+               } catch(e) { 
+                 console.error("PDF extract error", e); 
+                 extractedText = "Could not extract text from PDF."; 
+               }
+            } else if (nameLower.endsWith('.txt')) {
+               extractedText = await file.text();
+            } else {
+               extractedText = "Unsupported file format for direct text extraction in this demo.";
+            }
+
+            const newDoc = {
+              id: `${file.name}-${Math.random().toString(36).substr(2, 4)}`,
+              title: file.name.replace(/\.[^/.]+$/, ""),
+              authors: 'Local Upload',
+              abstract: extractedText.substring(0, 400) + '...',
+              fullText: extractedText,
+              size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+              url: url
             };
+            activeWorkspace.value.unshift(newDoc);
+          }
+          if (activeWorkspace.value.length > 0 && !activeDocument.value) {
+            activeDocument.value = activeWorkspace.value[0];
+          }
+          nextTick(() => { lucide.createIcons(); });
+        };
+
+        const removeFromWorkspace = (id) => {
+          activeWorkspace.value = activeWorkspace.value.filter(d => d.id !== id);
+          if(activeDocument.value && activeDocument.value.id === id) {
+             activeDocument.value = activeWorkspace.value.length > 0 ? activeWorkspace.value[0] : null;
+          }
+        };
+
+        const isInWorkspace = (id) => {
+          return activeWorkspace.value.some(d => d.id === id);
+        };
+
+        const injectIntoWorkspace = (result) => {
+          if (!isInWorkspace(result.id)) {
+            const newDoc = {
+              id: result.id,
+              title: result.title,
+              authors: result.authors,
+              abstract: result.abstract,
+              fullText: result.abstract,
+              size: 'External link',
+              url: result.url
+            };
+            activeWorkspace.value.unshift(newDoc);
+            
+            if (!activeDocument.value) {
+              activeDocument.value = newDoc;
+            }
+          }
+          nextTick(() => { lucide.createIcons(); });
+        };
+
+        const performSearch = async () => {
+        if (!searchQuery.value.trim()) return;
+        isSearching.value = true;
+        searchResults.value = [];
+      
+        try {
+          // Calling YOUR backend proxy, not arXiv directly
+          const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.value)}`);
+          
+          if (!res.ok) throw new Error("Proxy error");
+      
+          const str = await res.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(str, "text/xml");
+          const entries = xmlDoc.getElementsByTagName("entry");
+      
+          const results = [];
+          for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i];
+            results.push({
+              id: entry.getElementsByTagName("id")[0].textContent.split('/').pop(),
+              title: entry.getElementsByTagName("title")[0].textContent.trim(),
+              authors: Array.from(entry.getElementsByTagName("author")).map(a => a.getElementsByTagName("name")[0].textContent).join(', '),
+              abstract: entry.getElementsByTagName("summary")[0].textContent.trim(),
+              date: entry.getElementsByTagName("published")[0].textContent.split('T')[0],
+              url: entry.getElementsByTagName("id")[0].textContent
+            });
+          }
+          searchResults.value = results;
+        } catch (e) {
+          console.error("Search failed:", e);
+        } finally {
+          isSearching.value = false;
+          nextTick(() => { lucide.createIcons(); });
+        }
+      };
 
         const triggerChime = () => {
           try {
@@ -1065,45 +1064,85 @@
           });
         };
 
-        const processCitations = (text, docs) => {
-          return text.replace(/\[(\d+)\]/g, (match, index) => {
-            const docIndex = parseInt(index) - 1;
-            const doc = docs[docIndex];
-            
-            if (doc) {
-              // Returns a clickable span that triggers your viewer
-              return `<span class="citation-link" onclick="window.openDoc('${doc.id}')" style="color: blue; cursor: pointer; text-decoration: underline;">[${doc.title}]</span>`;
-            }
-            return match; // Return original if doc not found
+        const sendChatMessage = async () => {
+          if (!userMessage.value.trim()) return;
+          const text = userMessage.value;
+          userMessage.value = '';
+
+          chatMessages.value.push({
+            id: Date.now(),
+            role: 'user',
+            text: text
           });
+          scrollToBottom();
+
+          isBotThinking.value = true;
+
+          if (isLiveAPI.value) {
+            try {
+              const result = await makeLiveGeminiCall(text);
+              chatMessages.value.push({
+                id: Date.now(),
+                role: 'bot',
+                text: result.text,
+                citations: result.citations,
+                webBadges: result.webBadges
+              });
+            } catch (err) {
+              chatMessages.value.push({
+                id: Date.now(),
+                role: 'bot',
+                text: `Live API Error: ${err.message}. Using fallback.`,
+                citations: []
+              });
+            }
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            chatMessages.value.push({
+              id: Date.now(),
+              role: 'bot',
+              text: `I am arxivLLM. You asked: "${text}". Since you are in sandbox mode, I do not have a live connection to parse the full context right now. Please enter a live API key above to fully interact with the workspace and general knowledge base.`,
+              citations: []
+            });
+          }
+
+          isBotThinking.value = false;
+          scrollToBottom();
+          nextTick(() => { lucide.createIcons(); });
         };
 
-        const sendChatMessage = async () => {
-        if (!userMessage.value.trim()) return;
-        chatMessages.value.push({ id: Date.now(), role: 'user', text: userMessage.value });
-        const textToProcess = userMessage.value;
-        userMessage.value = '';
-        isBotThinking.value = true;
-        const result = isLiveAPI.value ? await makeLiveGeminiCall(textToProcess) : { text: "API Key required." };
-        chatMessages.value.push({ id: Date.now(), role: 'bot', text: result.text });
-        isBotThinking.value = false;
-    };
-
         const makeLiveGeminiCall = async (queryText) => {
-        const contextDocs = chatContextMode.value === 'all' ? activeWorkspace.value : activeWorkspace.value.filter(d => d.id === chatContextMode.value);
-        const docsCombinedContext = contextDocs.map(d => `[TITLE: ${d.title}, TEXT: ${d.fullText?.substring(0, 15000)}]`).join('\n\n');
+          let contextDocs = activeWorkspace.value;
+          if (chatContextMode.value !== 'all') {
+            contextDocs = contextDocs.filter(d => d.id === chatContextMode.value);
+          }
         
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.value.trim()}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: queryText }] }],
-                systemInstruction: { parts: [{ text: `Answer using these docs: ${docsCombinedContext}` }] }
-            })
-        });
-        const data = await response.json();
-        return { text: data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response." };
-    };
+          const docsCombinedContext = contextDocs.map(d => {
+            const content = d.fullText ? d.fullText.substring(0, 15000) : "No text extracted.";
+            return `[DOCUMENT ID: ${d.id}, TITLE: ${d.title}, TEXT: ${content}]`;
+          }).join('\n\n');
+        
+          // Define the dynamic prompt right here
+          const currentSystemPrompt = `You are arxivLLM, a master in explaining research papers. Your task is to answer user queries using the provided workspace documents or general knowledge if the query is unrelated.
+        
+        Formatting Rules:
+        1. Spacing: Always use double newlines between paragraphs and sections.
+        2. Citations: Embed citations directly inline at the end of the relevant sentence or clause. Format: [Source Name](#ID). Do not list citations at the bottom of the response.
+        3. Bolding: Use bold only for section headers (###) or specific technical keywords. Do not bold entire paragraphs or full sentences.
+        4. Tone: Keep the tone practical, realistic, direct, and academic. Do not include slogans or motivational filler.
+        5. Structure: Use Markdown headers (###) to organize content clearly.
+        
+        Active Workspace Documents:
+        ${docsCombinedContext || 'No documents available in the current context.'}`;
+        
+          // Debugging: Check the console (F12) to see what is being sent to the AI
+          console.log("Sending to AI, document context includes:", docsCombinedContext);
+        
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.value.trim()}`;
+          const payload = {
+            contents: [{ parts: [{ text: queryText }] }],
+            systemInstruction: { parts: [{ text: currentSystemPrompt }] }
+          };
         
           // ... (rest of your fetch logic)
           let attempts = 5;
@@ -1173,22 +1212,57 @@
         });
 
         return {
-        activePage, activeWorkspace, activeDocument, chatContextMode, darkMode, apiKey, isLiveAPI,
-        searchQuery, searchResults, isSearching, dragOver, fileInput, removeFromWorkspace: (id) => activeWorkspace.value = activeWorkspace.value.filter(d => d.id !== id),
-        handleFileDrop: (e) => { dragOver.value = false; processIncomingFiles(e.dataTransfer.files); },
-        handleFileSelect: (e) => processIncomingFiles(e.target.files),
-        injectIntoWorkspace: (res) => { activeWorkspace.value.unshift(res); activeDocument.value = res; },
-        isInWorkspace: (id) => activeWorkspace.value.some(d => d.id === id),
-        performSearch, timerMinutes, timerSeconds, timerActive, timerMode, mindmapCoreHub, centerNodeX, centerNodeY,
-        mindmapNodes, newConceptLabel, addMindmapNode: () => { mindmapNodes.value.push({ id: Date.now(), label: newConceptLabel.value, x: 200, y: 200 }); newConceptLabel.value = ''; },
-        pruneMindmapNode: (id) => mindmapNodes.value = mindmapNodes.value.filter(n => n.id !== id),
-        milestones, newMilestoneLabel, addMilestone: () => { milestones.value.push({ id: Date.now(), label: newMilestoneLabel.value }); newMilestoneLabel.value = ''; },
-        removeMilestone: (id) => milestones.value = milestones.value.filter(m => m.id !== id),
-        userMessage, isBotThinking, chatMessages, chatContainer, suggestedPrompts, applySuggestedPrompt,
-        sendChatMessage, clearChat, toggleDarkMode: () => { darkMode.value = !darkMode.value; document.documentElement.classList.toggle('dark'); },
-        renderMarkdown
-    };
-}
+          activePage,
+          activeWorkspace,
+          activeDocument,
+          chatContextMode,
+          darkMode,
+          apiKey,
+          isLiveAPI,
+          searchQuery,
+          searchResults,
+          isSearching,
+          dragOver,
+          fileInput,
+          removeFromWorkspace,
+          handleFileDrop,
+          handleFileSelect,
+          injectIntoWorkspace,
+          isInWorkspace,
+          performSearch,
+          timerMinutes,
+          timerSeconds,
+          timerActive,
+          timerMode,
+          formattedTime,
+          timerDashoffset,
+          timerProgressColor,
+          setTimerPreset,
+          toggleTimer,
+          resetTimer,
+          mindmapCoreHub,
+          centerNodeX,
+          centerNodeY,
+          mindmapNodes,
+          newConceptLabel,
+          addMindmapNode,
+          pruneMindmapNode,
+          milestones,
+          newMilestoneLabel,
+          addMilestone,
+          removeMilestone,
+          userMessage,
+          isBotThinking,
+          chatMessages,
+          chatContainer,
+          suggestedPrompts,
+          applySuggestedPrompt,
+          sendChatMessage,
+          clearChat,
+          toggleDarkMode,
+          renderMarkdown
+        };
+      }
     }).mount('#app');
   </script>
 </body>
