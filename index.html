@@ -796,17 +796,17 @@
 
   try {
     const q = encodeURIComponent(searchQuery.value);
-    // Add the proxy here:
-    const proxyUrl = "https://corsproxy.io/?";
     const targetUrl = `https://export.arxiv.org/api/query?search_query=all:${q}&start=0&max_results=5`;
     
-    const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
-    
+    // Using allorigins.win
+    const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
     if (!res.ok) throw new Error("Network response was not ok");
     
-    const str = await res.text();
+    const data = await res.json(); // AllOrigins returns JSON
+    const xmlString = data.contents; // The actual arXiv XML
+    
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(str, "text/xml");
+    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
     const entries = xmlDoc.getElementsByTagName("entry");
 
     const results = [];
