@@ -753,13 +753,31 @@
           }
         };
 
-        const processIncomingFiles = async (files) => {
-          for(let i=1; i<=Math.min(pdf.numPages, 10); i++) {
-             const page = await pdf.getPage(i);
-             const content = await page.getTextContent();
-             // Add a marker for the AI to see:
-             text += `\n[PAGE ${i}]\n` + content.items.map(item => item.str).join(' ') + '\n';
-          }
+       const processIncomingFiles = async (files) => {
+        for (const file of files) {
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const pdf = await pdfjsLib.getDocument(e.target.result).promise;
+            let fullText = "";
+            
+            // Extract text strictly, without injecting metadata
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              fullText += textContent.items.map(item => item.str).join(' ') + "\n";
+            }
+      
+            // Add to workspace in the standard way
+            activeWorkspace.value.push({
+              id: Math.random().toString(36).substr(2, 9),
+              title: file.name,
+              fullText: fullText, // Keep this pure
+              size: (file.size / 1024).toFixed(2) + ' KB'
+            });
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      };
 
             if (nameLower.endsWith('.pdf')) {
                try {
@@ -1131,6 +1149,14 @@
           if (chatContextMode.value !== 'all') {
             contextDocs = contextDocs.filter(d => d.id === chatContextMode.value);
           }
+
+          const docsCombinedContext = contextDocs.map(d => {
+  // Truncate text for prompt limits
+  const content = d.fullText ? d.fullText.substring(0, 15000) : "No text extracted.";
+  
+  // Do NOT add headers into 'content'. Instead, just label the document.
+  return `[DOCUMENT TITLE: ${d.title}, TEXT: ${content}]`;
+}).join('\n\n');
         
           const docsCombinedContext = contextDocs.map(d => {
             const content = d.fullText ? d.fullText.substring(0, 15000) : "No text extracted.";
