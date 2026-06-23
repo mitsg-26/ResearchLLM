@@ -796,7 +796,11 @@
 
   try {
     const q = encodeURIComponent(searchQuery.value);
-    const res = await fetch(`https://export.arxiv.org/api/query?search_query=all:${q}&start=0&max_results=5`);
+    // Add the proxy here:
+    const proxyUrl = "https://corsproxy.io/?";
+    const targetUrl = `https://export.arxiv.org/api/query?search_query=all:${q}&start=0&max_results=5`;
+    
+    const res = await fetch(proxyUrl + encodeURIComponent(targetUrl));
     
     if (!res.ok) throw new Error("Network response was not ok");
     
@@ -820,10 +824,8 @@
     searchResults.value = results;
   } catch (e) {
     console.error("Search failed:", e);
-    // Silent fail or set an error state
   } finally {
     isSearching.value = false;
-    // Ensure icons render after DOM update
     nextTick(() => { lucide.createIcons(); });
   }
 };
