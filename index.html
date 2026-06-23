@@ -462,7 +462,7 @@
                 ]"
                 class="max-w-[80%] rounded-2xl p-4 text-xs leading-relaxed flex flex-col gap-2">
                 
-                <div class="markdown-content" v-html="marked.parse(msg.text)"></div>
+                <div class="markdown-content" v-html="renderMarkdown(msg.text)"></div>
 
                 <!-- Grounding and citation pill list -->
                 <div v-if="msg.citations && msg.citations.length > 0" class="mt-2 pt-2 border-t border-gray-100 dark:border-neutral-800/80 flex flex-col gap-1.5">
@@ -817,41 +817,41 @@
         };
 
         const performSearch = async () => {
-  if (!searchQuery.value.trim()) return;
-  isSearching.value = true;
-  searchResults.value = [];
-
-  try {
-    // Calling YOUR backend proxy, not arXiv directly
-    const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.value)}`);
-    
-    if (!res.ok) throw new Error("Proxy error");
-
-    const str = await res.text();
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(str, "text/xml");
-    const entries = xmlDoc.getElementsByTagName("entry");
-
-    const results = [];
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
-      results.push({
-        id: entry.getElementsByTagName("id")[0].textContent.split('/').pop(),
-        title: entry.getElementsByTagName("title")[0].textContent.trim(),
-        authors: Array.from(entry.getElementsByTagName("author")).map(a => a.getElementsByTagName("name")[0].textContent).join(', '),
-        abstract: entry.getElementsByTagName("summary")[0].textContent.trim(),
-        date: entry.getElementsByTagName("published")[0].textContent.split('T')[0],
-        url: entry.getElementsByTagName("id")[0].textContent
-      });
-    }
-    searchResults.value = results;
-  } catch (e) {
-    console.error("Search failed:", e);
-  } finally {
-    isSearching.value = false;
-    nextTick(() => { lucide.createIcons(); });
-  }
-};
+        if (!searchQuery.value.trim()) return;
+        isSearching.value = true;
+        searchResults.value = [];
+      
+        try {
+          // Calling YOUR backend proxy, not arXiv directly
+          const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.value)}`);
+          
+          if (!res.ok) throw new Error("Proxy error");
+      
+          const str = await res.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(str, "text/xml");
+          const entries = xmlDoc.getElementsByTagName("entry");
+      
+          const results = [];
+          for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i];
+            results.push({
+              id: entry.getElementsByTagName("id")[0].textContent.split('/').pop(),
+              title: entry.getElementsByTagName("title")[0].textContent.trim(),
+              authors: Array.from(entry.getElementsByTagName("author")).map(a => a.getElementsByTagName("name")[0].textContent).join(', '),
+              abstract: entry.getElementsByTagName("summary")[0].textContent.trim(),
+              date: entry.getElementsByTagName("published")[0].textContent.split('T')[0],
+              url: entry.getElementsByTagName("id")[0].textContent
+            });
+          }
+          searchResults.value = results;
+        } catch (e) {
+          console.error("Search failed:", e);
+        } finally {
+          isSearching.value = false;
+          nextTick(() => { lucide.createIcons(); });
+        }
+      };
 
         const triggerChime = () => {
           try {
@@ -1109,6 +1109,17 @@
             const content = d.fullText ? d.fullText.substring(0, 15000) : "No text extracted.";
             return `[DOCUMENT ID: ${d.id}, TITLE: ${d.title}, TEXT: ${content}]`;
           }).join('\n\n');
+
+          const renderMarkdown = (text) => {
+            // Check if marked is available globally, otherwise return raw text
+            return window.marked ? window.marked.parse(text || '') : text;
+          };
+          
+          // ... inside the return block at the bottom of setup:
+          return {
+            // ... (all your existing variables)
+            renderMarkdown, // <--- ADD THIS LINE HERE
+          };
 
           const systemPrompt = `You are arxivLLM, a master in explaining research papers. Your task is to answer user queries using the provided workspace documents or general knowledge if the query is unrelated.
 
