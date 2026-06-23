@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>arXiv Cosmos — Agentic Research Workspace</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- PDF.js for text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            cinzel: ['Cinzel', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            lavender: '#eadce4',
+            peach: '#fddcc5',
+            mist: '#badbe5',
+            silver: '#d1d1d6',
+            cream: '#fdfdfd',
+            slateDark: '#121214',
+            charcoal: '#1a1a1f'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #d1d1d6;
+      border-radius: 10px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #2e2e38;
+    }
+    
+    .bg-custom-lavender { background-color: #eadce4; }
+    .bg-custom-peach { background-color: #fddcc5; }
+    .bg-custom-mist { background-color: #badbe5; }
+    .border-custom-silver { border-color: #d1d1d6; }
+    
+    .glow-breathing {
+      animation: breathe 2s infinite ease-in-out;
+    }
+    @keyframes breathe {
+      0%, 100% { box-shadow: 0 0 4px #badbe5, 0 0 12px rgba(186, 219, 229, 0.6); opacity: 0.8; }
+      50% { box-shadow: 0 0 12px #badbe5, 0 0 24px rgba(186, 219, 229, 0.9); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="h-full bg-cream text-slate-800 dark:bg-slateDark dark:text-gray-200 transition-colors duration-200 font-sans antialiased overflow-hidden">
+  <div id="app" class="h-full flex flex-col">
+
+    <!-- HEADER / GLOBAL NAVIGATION -->
+    <header class="border-b border-gray-200 dark:border-neutral-800 bg-white dark:bg-charcoal px-6 py-4 flex items-center justify-between shrink-0 select-none">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-custom-lavender dark:bg-purple-950/40 flex items-center justify-center text-purple-900 dark:text-purple-300">
+          <i data-lucide="orbit" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-cinzel text-lg tracking-[0.12em] font-bold text-slate-900 dark:text-white">ARXIV COSMOS</h1>
+          <p class="text-[10px] tracking-wider text-gray-400 dark:text-gray-500 font-medium">COSMOSNOTE v2.5</p>
+        </div>
+      </div>
+
+      <!-- Center Tabs Nav -->
+      <nav class="flex items-center bg-gray-100 dark:bg-slateDark p-1 rounded-2xl border border-gray-200/50 dark:border-neutral-800/80">
+        <button 
+          @click="activePage = 'dashboard'"
+          :class="activePage === 'dashboard' ? 'bg-white dark:bg-charcoal text-slate-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'"
+          class="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Dashboard</span>
+        </button>
+        <button 
+          @click="activePage = 'workspace'"
+          :class="activePage === 'workspace' ? 'bg-white dark:bg-charcoal text-slate-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'"
+          class="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all">
+          <i data-lucide="binary" class="w-4 h-4"></i>
+          <span>Workspace</span>
+        </button>
+        <button 
+          @click="activePage = 'roadmap'"
+          :class="activePage === 'roadmap' ? 'bg-white dark:bg-charcoal text-slate-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'"
+          class="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl transition-all">
+          <i data-lucide="milestone" class="w-4 h-4"></i>
+          <span>Roadmap</span>
+        </button>
+      </nav>
+
+      <!-- API Configuration & Theme Toggles -->
+      <div class="flex items-center gap-4">
+        <!-- API Connection Status -->
+        <div class="relative flex items-center gap-3">
+          <!-- API Input Box -->
+          <div class="relative">
+            <span class="absolute left-3 top-2.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" :stroke="isLiveAPI ? '#10b981' : '#9ca3af'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-colors duration-300"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>
+            </span>
+            <input 
+              type="password" 
+              placeholder="Gemini API Key..." 
+              v-model="apiKey"
+              class="w-48 pl-9 pr-3 py-1.5 text-xs rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-purple-400 transition-all text-slate-800 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-600" />
+          </div>
+
+          <!-- Glow Connection Light Indicator -->
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200/50 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900">
+            <div 
+              :class="isLiveAPI ? 'bg-emerald-400 dark:bg-emerald-500 glow-breathing' : 'bg-gray-300 dark:bg-gray-600'"
+              class="w-2.5 h-2.5 rounded-full transition-all duration-500">
+            </div>
+            <span class="text-[10px] font-bold tracking-wider text-gray-500 uppercase">
+              {{ isLiveAPI ? 'Live API' : 'Sandbox' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Dark/Light Theme Switcher -->
+        <button 
+          @click="toggleDarkMode" 
+          class="p-2 rounded-xl border border-gray-200 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-900 text-gray-500 dark:text-gray-400">
+          <i :data-lucide="darkMode ? 'sun' : 'moon'" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main class="flex-1 overflow-hidden relative">
+
+      <!-- PAGE 1: THE DASHBOARD -->
+      <div v-show="activePage === 'dashboard'" class="h-full flex lg:flex-row flex-col">
+        <!-- Left Sidebar: Ingestion and Workspace Inventory -->
+        <aside class="w-full lg:w-80 border-r border-gray-200 dark:border-neutral-800 p-6 flex flex-col gap-6 shrink-0 bg-white/50 dark:bg-charcoal/30 overflow-y-auto">
+          <!-- Grounding Ingestion Dropzone -->
+          <div>
+            <h3 class="font-cinzel text-xs tracking-wider text-gray-400 dark:text-gray-500 mb-3 font-semibold">GROUNDING INGESTION</h3>
+            <div 
+              @dragover.prevent="dragOver = true"
+              @dragleave.prevent="dragOver = false"
+              @drop.prevent="handleFileDrop"
+              @click="$refs.fileInput.click()"
+              :class="dragOver ? 'border-purple-400 bg-purple-50/20 dark:bg-purple-950/10' : 'border-gray-300 dark:border-neutral-800 hover:border-gray-400 dark:hover:border-neutral-700'"
+              class="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group">
+              <input type="file" ref="fileInput" @change="handleFileSelect" multiple class="hidden" accept=".pdf,.txt" />
+              <div class="w-10 h-10 rounded-full bg-custom-lavender dark:bg-purple-950/30 flex items-center justify-center text-purple-900 dark:text-purple-300 group-hover:scale-105 transition-transform duration-200">
+                <i data-lucide="cloud-upload" class="w-5 h-5"></i>
+              </div>
+              <p class="text-xs font-semibold text-slate-800 dark:text-gray-300 mt-1">Upload research paper</p>
+              <p class="text-[10px] text-gray-400 dark:text-gray-500">PDF, TXT accepted</p>
+            </div>
+          </div>
+
+          <!-- Active Workspace Inventory -->
+          <div class="flex-1 flex flex-col min-h-0">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-cinzel text-xs tracking-wider text-gray-400 dark:text-gray-500 font-semibold">WORKSPACE CONTEXT</h3>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-custom-mist text-slate-700 dark:bg-cyan-950 dark:text-cyan-300">
+                {{ activeWorkspace.length }} Files
+              </span>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto space-y-2.5 pr-1">
+              <div v-if="activeWorkspace.length === 0" class="h-32 border border-gray-100 dark:border-neutral-800/50 rounded-2xl flex flex-col items-center justify-center text-center p-4">
+                <i data-lucide="folder-search" class="w-6 h-6 text-gray-300 dark:text-neutral-700 mb-2"></i>
+                <p class="text-xs font-medium text-gray-400">Context is empty</p>
+                <p class="text-[10px] text-gray-500">Upload documents to populate workspace</p>
+              </div>
+
+              <!-- Inventory List Item -->
+              <div 
+                v-for="doc in activeWorkspace" 
+                :key="doc.id" 
+                @click="activeDocument = doc"
+                :class="activeDocument?.id === doc.id ? 'border-purple-300 bg-purple-50 dark:bg-purple-900/20 dark:border-purple-700' : 'border-gray-100 dark:border-neutral-800 bg-white dark:bg-charcoal hover:border-gray-200 dark:hover:border-neutral-700/80'"
+                class="group p-3 rounded-xl border transition-all flex items-start gap-2.5 cursor-pointer">
+                <div class="w-8 h-8 rounded-lg bg-gray-50 dark:bg-slateDark border border-gray-100 dark:border-neutral-800 flex items-center justify-center shrink-0">
+                  <i data-lucide="file-text" class="w-4 h-4 text-purple-600 dark:text-purple-400" v-if="doc.title.toLowerCase().includes('pdf')"></i>
+                  <i data-lucide="file-code" class="w-4 h-4 text-cyan-600 dark:text-cyan-400" v-else></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-semibold text-slate-800 dark:text-gray-200 truncate" :title="doc.title">
+                    {{ doc.title }}
+                  </p>
+                  <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                    {{ doc.size }}
+                  </p>
+                </div>
+                <button 
+                  @click.stop="removeFromWorkspace(doc.id)"
+                  class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400 transition-all p-0.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/20">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Right Side: The Paper Canvas Grid -->
+        <section class="flex-1 p-6 flex flex-col gap-4 overflow-hidden">
+          <div class="flex items-center justify-between shrink-0">
+            <div>
+              <h2 class="font-cinzel text-base tracking-widest font-bold text-slate-900 dark:text-white">DOCUMENT VIEWER</h2>
+              <p class="text-xs text-gray-400 dark:text-gray-500">Inspect full text and analyze actual file contents.</p>
+            </div>
+          </div>
+
+          <!-- Canvas Cards Grid -->
+          <div v-if="activeWorkspace.length === 0" class="flex-1 border border-dashed border-gray-200 dark:border-neutral-800 rounded-3xl flex flex-col items-center justify-center p-8 text-center bg-white/10">
+            <div class="w-14 h-14 rounded-2xl bg-custom-peach dark:bg-amber-950/20 flex items-center justify-center text-amber-700 dark:text-amber-400 mb-3">
+              <i data-lucide="layers" class="w-7 h-7"></i>
+            </div>
+            <p class="text-sm font-semibold text-slate-800 dark:text-gray-200">No Interactive Document Layers Active</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 max-w-sm mt-1">Upload custom research files or inject documents from the search tool on the workspace tab to populate this Canvas.</p>
+          </div>
+
+          <div v-else-if="!activeDocument" class="flex-1 border border-dashed border-gray-200 dark:border-neutral-800 rounded-3xl flex flex-col items-center justify-center p-8 text-center bg-white/10">
+             <p class="text-sm font-semibold text-slate-800 dark:text-gray-200">Select a document from the left to view</p>
+          </div>
+
+          <div v-else class="flex-1 flex flex-col border border-gray-200 dark:border-neutral-800 rounded-2xl bg-gray-100 dark:bg-neutral-900 overflow-hidden relative">
+            <!-- Viewer Toolbar -->
+            <div class="p-3 bg-white dark:bg-charcoal border-b border-gray-200 dark:border-neutral-800 flex items-center justify-between shrink-0 z-10">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-custom-lavender dark:bg-purple-950/40 flex items-center justify-center text-purple-900 dark:text-purple-300">
+                  <i data-lucide="file-text" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <h3 class="font-cinzel text-xs font-bold text-slate-900 dark:text-white truncate max-w-xs">{{ activeDocument.title }}</h3>
+                  <p class="text-[10px] text-gray-400">{{ activeDocument.size }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Real Page View Area using object/iframe -->
+            <div class="flex-1 w-full h-full bg-gray-50 dark:bg-slateDark overflow-hidden relative">
+                <iframe v-if="activeDocument" :src="activeDocument.url" width="100%" height="100%"></iframe>
+                <div v-else class="w-full h-full flex items-center justify-center">
+                 <p class="text-xs text-gray-400">Preview not available for this source.</p>
+                </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- PAGE 2: RESEARCH WORKSPACE -->
+      <div v-show="activePage === 'workspace'" class="h-full flex lg:flex-row flex-col">
+        <!-- Left Side: Search & Context -->
+        <div class="w-full lg:w-96 border-r border-gray-200 dark:border-neutral-800 p-6 flex flex-col gap-6 shrink-0 bg-white/50 dark:bg-charcoal/30 overflow-y-auto">
+          
+          <!-- arXiv Discovery Search Engine -->
+          <div>
+            <h3 class="font-cinzel text-xs tracking-wider text-gray-400 dark:text-gray-500 mb-3 font-semibold">ARXIV DISCOVERY ENGINE</h3>
+            <div class="flex flex-col gap-2">
+              <div class="relative">
+                <span class="absolute left-3.5 top-3 text-gray-400">
+                  <i data-lucide="search" class="w-4 h-4"></i>
+                </span>
+                <input 
+                  type="text" 
+                  placeholder="Query papers, topics, authors..." 
+                  v-model="searchQuery"
+                  @keyup.enter="performSearch"
+                  class="w-full pl-10 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-charcoal border border-gray-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-purple-400 transition-all text-slate-800 dark:text-gray-100" />
+              </div>
+
+              <button 
+                @click="performSearch"
+                class="w-full mt-1 bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold py-2 rounded-xl text-xs hover:opacity-90 transition-all">
+                Query arXiv API
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Search Results List -->
+          <div class="flex-1 flex flex-col min-h-0">
+            <h3 class="font-cinzel text-xs tracking-wider text-gray-400 dark:text-gray-500 mb-3 font-semibold">HARVESTED META-DATA</h3>
+            <div class="flex-1 overflow-y-auto space-y-3 pr-1">
+              <div v-if="isSearching" class="h-32 flex items-center justify-center text-center p-4">
+                <i data-lucide="loader" class="w-6 h-6 text-gray-400 animate-spin"></i>
+              </div>
+              <div v-else-if="searchResults.length === 0" class="h-32 border border-gray-100 dark:border-neutral-800/50 rounded-2xl flex flex-col items-center justify-center text-center p-4">
+                <i data-lucide="database" class="w-6 h-6 text-gray-300 dark:text-neutral-700 mb-2"></i>
+                <p class="text-xs font-medium text-gray-400">No active query run</p>
+                <p class="text-[10px] text-gray-500">Search to discover real papers</p>
+              </div>
+
+              <!-- Search Result Card -->
+              <div 
+                v-for="result in searchResults" 
+                :key="result.id" 
+                class="p-3.5 rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-charcoal flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-custom-mist text-slate-800 dark:bg-cyan-950 dark:text-cyan-300 uppercase">
+                    arXiv
+                  </span>
+                  <span class="text-[10px] text-gray-400">{{ result.date }}</span>
+                </div>
+                <div>
+                  <h4 class="font-cinzel text-xs tracking-wider font-semibold text-slate-900 dark:text-white leading-normal">
+                    {{ result.title }}
+                  </h4>
+                  <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-1 line-clamp-2">
+                    {{ result.authors }}
+                  </p>
+                </div>
+                <div class="pt-2 border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between">
+                  <span v-if="isInWorkspace(result.id)" class="text-[10px] font-semibold text-emerald-500 flex items-center gap-1">
+                    <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                    Grounded
+                  </span>
+                  <button 
+                    v-else
+                    @click="injectIntoWorkspace(result)"
+                    class="flex items-center gap-1 text-[10px] font-bold text-purple-700 dark:text-purple-400 hover:underline">
+                    <i data-lucide="plus" class="w-3 h-3"></i>
+                    Inject Context
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Context Sidebar Indicator -->
+          <div class="pt-4 border-t border-gray-200 dark:border-neutral-800 shrink-0">
+            <h4 class="font-cinzel text-xs tracking-wider text-gray-400 dark:text-gray-500 mb-2 font-semibold">ACTIVE COGNITIVE PILLS</h4>
+            <div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+              <span 
+                v-for="doc in activeWorkspace" 
+                :key="doc.id" 
+                class="text-[9px] font-bold px-2 py-1 rounded-xl bg-custom-lavender text-purple-950 dark:bg-purple-950/40 dark:text-purple-300 flex items-center gap-1 shrink-0">
+                <i data-lucide="binary" class="w-2.5 h-2.5"></i>
+                {{ doc.title.substring(0, 18) }}...
+              </span>
+              <span v-if="activeWorkspace.length === 0" class="text-[10px] italic text-gray-400">
+                Zero document context locked.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: AI Synthesis Chatbot -->
+        <section class="flex-1 flex flex-col min-w-0 bg-white dark:bg-charcoal/20">
+          <!-- Chat Panel Header -->
+          <div class="p-5 border-b border-gray-200 dark:border-neutral-800 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-custom-mist dark:bg-cyan-950 flex items-center justify-center text-cyan-800 dark:text-cyan-300 shrink-0">
+                <i data-lucide="bot-message-square" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="font-cinzel text-sm tracking-wider font-bold text-slate-900 dark:text-white">AI SYNTHESIS AGENT</h3>
+                <p class="text-[10px] text-gray-400 dark:text-gray-500">Grounded analysis via arxivLLM.</p>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <select 
+                v-model="chatContextMode"
+                class="text-xs bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-lg px-2 py-1.5 outline-none text-slate-700 dark:text-gray-200 max-w-[150px] truncate">
+                <option value="all">All Documents</option>
+                <option v-for="doc in activeWorkspace" :key="doc.id" :value="doc.id">{{ doc.title }}</option>
+              </select>
+              <button 
+                @click="clearChat"
+                class="p-2 rounded-xl border border-gray-200 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-800 text-gray-400 hover:text-slate-800 dark:hover:text-white shrink-0"
+                title="Reset Dialogue History">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Conversation Area -->
+          <div class="flex-1 overflow-y-auto p-6 space-y-4" ref="chatContainer">
+            <div v-if="chatMessages.length === 0" class="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto">
+              <div class="w-12 h-12 rounded-2xl bg-custom-lavender dark:bg-purple-950/20 flex items-center justify-center text-purple-800 dark:text-purple-400 mb-3">
+                <i data-lucide="sparkles" class="w-6 h-6"></i>
+              </div>
+              <p class="text-xs font-semibold text-slate-800 dark:text-gray-200">Initiate Synthesis Grounding</p>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1 leading-relaxed">
+                Query papers currently inside your workspace. If the system is in Sandbox Mode, it uses a localized semantic engine to trace themes.
+              </p>
+              <div class="grid grid-cols-2 gap-2 mt-4 w-full">
+                <button 
+                  v-for="prompt in suggestedPrompts" 
+                  :key="prompt"
+                  @click="applySuggestedPrompt(prompt)"
+                  class="p-2 border border-gray-100 dark:border-neutral-800 rounded-xl bg-white dark:bg-charcoal text-left text-[10px] text-gray-500 hover:border-purple-300 dark:hover:border-neutral-700 transition-all leading-normal">
+                  {{ prompt }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Chat Message Bubble -->
+            <div 
+              v-for="msg in chatMessages" 
+              :key="msg.id"
+              :class="msg.role === 'user' ? 'justify-end' : 'justify-start'"
+              class="flex gap-3">
+              
+              <div v-if="msg.role !== 'user'" class="w-7 h-7 rounded-lg bg-custom-mist dark:bg-cyan-950/40 flex items-center justify-center text-cyan-800 dark:text-cyan-300 shrink-0">
+                <i data-lucide="brain-circuit" class="w-4 h-4"></i>
+              </div>
+
+              <div 
+                :class="[
+                  msg.role === 'user' 
+                    ? 'bg-custom-lavender dark:bg-purple-950 text-slate-900 dark:text-purple-100 rounded-tr-none' 
+                    : 'bg-gray-50 dark:bg-neutral-900 text-slate-800 dark:text-gray-200 rounded-tl-none border border-gray-100 dark:border-neutral-800/80'
+                ]"
+                class="max-w-[80%] rounded-2xl p-4 text-xs leading-relaxed flex flex-col gap-2">
+                
+                <p class="whitespace-pre-wrap">{{ msg.text }}</p>
+
+                <!-- Grounding and citation pill list -->
+                <div v-if="msg.citations && msg.citations.length > 0" class="mt-2 pt-2 border-t border-gray-100 dark:border-neutral-800/80 flex flex-col gap-1.5">
+                  <span class="text-[9px] font-bold tracking-wider text-gray-400 dark:text-gray-500 uppercase">Grounding Citations</span>
+                  <div class="flex flex-wrap gap-1.5">
+                    <span 
+                      v-for="citation in msg.citations" 
+                      :key="citation.ref"
+                      class="text-[9px] font-semibold px-2 py-0.5 rounded-lg bg-white/80 dark:bg-charcoal border border-gray-200/50 dark:border-neutral-800 text-slate-700 dark:text-gray-300 flex items-center gap-1 shadow-sm">
+                      <i data-lucide="file-check-2" class="w-3 h-3 text-emerald-500"></i>
+                      Ref: {{ citation.ref }}
+                    </span>
+                    
+                    <a 
+                      v-if="msg.webBadges"
+                      v-for="badge in msg.webBadges"
+                      :href="badge.url" 
+                      target="_blank"
+                      class="text-[9px] font-semibold px-2 py-0.5 rounded-lg bg-custom-peach border border-amber-200 text-amber-950 flex items-center gap-1 hover:underline">
+                      <i data-lucide="external-link" class="w-3 h-3 text-amber-700"></i>
+                      {{ badge.label }}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Loader Indicator -->
+            <div v-if="isBotThinking" class="flex gap-3 justify-start items-center">
+              <div class="w-7 h-7 rounded-lg bg-custom-mist dark:bg-cyan-950/40 flex items-center justify-center text-cyan-800 dark:text-cyan-300 animate-spin">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              </div>
+              <p class="text-[10px] text-gray-400 tracking-wider">GENERATE CONTEXTUALLY GROUNDED RESPONSE...</p>
+            </div>
+          </div>
+
+          <!-- Bottom Query Entry -->
+          <div class="p-4 border-t border-gray-200 dark:border-neutral-800 bg-white dark:bg-charcoal">
+            <div class="flex items-center gap-2">
+              <input 
+                type="text" 
+                placeholder="Ask paper parameters or combine themes..." 
+                v-model="userMessage"
+                @keyup.enter="sendChatMessage"
+                class="flex-1 px-4 py-2.5 text-xs rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-purple-400 transition-all text-slate-800 dark:text-gray-100" />
+              <button 
+                @click="sendChatMessage"
+                class="p-2.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all">
+                <i data-lucide="send-horizontal" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- PAGE 3: RESEARCH ROADMAP -->
+      <div v-show="activePage === 'roadmap'" class="h-full flex flex-col md:flex-row overflow-hidden">
+        
+        <!-- Interactive Concept Mindmap -->
+        <div class="flex-1 p-6 border-b md:border-b-0 md:border-r border-gray-200 dark:border-neutral-800 flex flex-col gap-4 min-w-0">
+          <div>
+            <h2 class="font-cinzel text-base tracking-widest font-bold text-slate-900 dark:text-white">CONCEPT MINDMAP</h2>
+            <p class="text-xs text-gray-400 dark:text-gray-500">Edit keyword nodes, trace visual relationships, and build a cohesive taxonomy.</p>
+          </div>
+
+          <!-- Mindmap Canvas Simulation -->
+          <div class="flex-1 relative border border-gray-200 dark:border-neutral-800 rounded-3xl bg-white dark:bg-charcoal/30 overflow-hidden min-h-[300px]">
+            <svg class="absolute inset-0 w-full h-full pointer-events-none">
+              <line 
+                v-for="node in mindmapNodes" 
+                :key="'line-'+node.id"
+                :x1="centerNodeX" :y1="centerNodeY" 
+                :x2="node.x" :y2="node.y" 
+                stroke="#d1d1d6" 
+                stroke-dasharray="4,4"
+                stroke-width="1.5"
+                class="dark:stroke-neutral-800" />
+            </svg>
+
+            <div 
+              :style="{ left: centerNodeX + 'px', top: centerNodeY + 'px' }" 
+              class="absolute -translate-x-1/2 -translate-y-1/2 p-3.5 rounded-2xl bg-custom-peach border border-amber-300 text-center shadow-lg w-40 z-10 select-none">
+              <span class="text-[9px] font-bold tracking-widest text-amber-900 uppercase">Research Nexus</span>
+              <input 
+                type="text" 
+                v-model="mindmapCoreHub"
+                class="w-full bg-transparent text-center text-xs font-bold font-cinzel text-amber-950 focus:outline-none" />
+            </div>
+
+            <div 
+              v-for="node in mindmapNodes" 
+              :key="node.id"
+              :style="{ left: node.x + 'px', top: node.y + 'px' }" 
+              class="absolute -translate-x-1/2 -translate-y-1/2 p-2.5 rounded-xl border shadow-sm w-36 select-none bg-white dark:bg-charcoal"
+              :class="node.theme === 'lavender' ? 'border-purple-200 dark:border-purple-900' : 'border-cyan-200 dark:border-cyan-900'">
+              
+              <div class="flex items-center justify-between mb-1.5">
+                <span 
+                  :class="node.theme === 'lavender' ? 'bg-custom-lavender text-purple-950 dark:bg-purple-950 dark:text-purple-300' : 'bg-custom-mist text-cyan-950 dark:bg-cyan-950 dark:text-cyan-300'"
+                  class="text-[8px] font-bold px-1 rounded uppercase tracking-wide">
+                  {{ node.id }}
+                </span>
+                <button 
+                  @click="pruneMindmapNode(node.id)"
+                  class="text-gray-400 hover:text-red-500 transition-colors">
+                  <i data-lucide="minus-circle" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <input 
+                type="text" 
+                v-model="node.label"
+                class="w-full bg-transparent text-xs font-semibold text-slate-800 dark:text-gray-200 focus:outline-none border-b border-transparent hover:border-gray-200 dark:hover:border-neutral-700" />
+            </div>
+
+            <div class="absolute bottom-4 left-4 right-4 bg-white/95 dark:bg-charcoal/95 border border-gray-100 dark:border-neutral-800/80 p-3 rounded-2xl flex items-center justify-between gap-2 shadow-lg max-w-sm">
+              <input 
+                type="text" 
+                placeholder="New concept label..." 
+                v-model="newConceptLabel"
+                class="flex-1 bg-gray-50 dark:bg-neutral-900 px-3 py-1.5 text-xs rounded-xl focus:outline-none border border-gray-200 dark:border-neutral-800 text-slate-800 dark:text-gray-100" />
+              <button 
+                @click="addMindmapNode"
+                class="px-3.5 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-semibold hover:opacity-90 transition-all">
+                Spawn Node
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Focus Timer & Milestone Roadmap -->
+        <div class="w-full md:w-80 p-6 shrink-0 flex flex-col gap-6 overflow-y-auto bg-white/50 dark:bg-charcoal/30">
+          
+          <div class="p-5 border border-gray-200 dark:border-neutral-800 rounded-3xl bg-white dark:bg-charcoal">
+            <h3 class="font-cinzel text-xs tracking-wider text-gray-400 dark:text-gray-500 mb-3 font-semibold text-center">FOCUS POMODORO</h3>
+            
+            <div class="flex items-center gap-1.5 justify-center mb-4">
+              <button 
+                @click="setTimerPreset('work')"
+                :class="timerMode === 'work' ? 'bg-custom-peach text-amber-950 font-semibold' : 'bg-gray-50 dark:bg-neutral-900 text-gray-500'"
+                class="text-[10px] px-2.5 py-1 rounded-lg border border-transparent transition-all">
+                Work (25m)
+              </button>
+              <button 
+                @click="setTimerPreset('short')"
+                :class="timerMode === 'short' ? 'bg-custom-lavender text-purple-950 font-semibold' : 'bg-gray-50 dark:bg-neutral-900 text-gray-500'"
+                class="text-[10px] px-2.5 py-1 rounded-lg border border-transparent transition-all">
+                Short (5m)
+              </button>
+              <button 
+                @click="setTimerPreset('long')"
+                :class="timerMode === 'long' ? 'bg-custom-mist text-cyan-950 font-semibold' : 'bg-gray-50 dark:bg-neutral-900 text-gray-500'"
+                class="text-[10px] px-2.5 py-1 rounded-lg border border-transparent transition-all">
+                Long (15m)
+              </button>
+            </div>
+
+            <div class="flex flex-col items-center justify-center py-4">
+              <div class="relative w-36 h-36 flex items-center justify-center">
+                <svg class="absolute inset-0 w-full h-full rotate-[-90deg]">
+                  <circle cx="72" cy="72" r="64" stroke="#e5e7eb" stroke-width="6" fill="transparent" class="dark:stroke-neutral-800" />
+                  <circle cx="72" cy="72" r="64" :stroke="timerProgressColor" stroke-width="6" fill="transparent" :stroke-dasharray="402" :stroke-dashoffset="timerDashoffset" class="transition-all duration-300" />
+                </svg>
+                <div class="text-center">
+                  <span class="font-cinzel text-2xl tracking-widest font-extrabold text-slate-800 dark:text-white">
+                    {{ formattedTime }}
+                  </span>
+                  <p class="text-[9px] uppercase tracking-widest text-gray-400 mt-1">
+                    {{ timerMode }} Session
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 justify-center mt-2">
+              <button 
+                @click="toggleTimer"
+                class="px-4 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-semibold flex items-center gap-1.5 hover:opacity-90">
+                <i :data-lucide="timerActive ? 'pause' : 'play'" class="w-3.5 h-3.5"></i>
+                <span>{{ timerActive ? 'Pause' : 'Start' }}</span>
+              </button>
+              <button 
+                @click="resetTimer"
+                class="p-1.5 rounded-xl border border-gray-200 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-800 text-gray-500">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex-1 flex flex-col min-h-[250px]">
+            <h3 class="font-cinzel text-xs tracking-wider text-gray-400 dark:text-gray-500 mb-3 font-semibold">MILESTONE ROADMAP</h3>
+            
+            <div class="flex-1 overflow-y-auto space-y-2 pr-1 mb-3">
+              <div v-if="milestones.length === 0" class="h-28 border border-gray-100 dark:border-neutral-800 rounded-2xl flex flex-col items-center justify-center text-center p-4 bg-white/20">
+                <i data-lucide="bookmark-check" class="w-5 h-5 text-gray-300 dark:text-neutral-700 mb-1"></i>
+                <p class="text-xs text-gray-400">Zero milestones logged</p>
+              </div>
+
+              <div 
+                v-for="task in milestones" 
+                :key="task.id"
+                class="p-3 rounded-2xl border border-gray-100 dark:border-neutral-800/80 bg-white dark:bg-charcoal flex items-start gap-2.5">
+                <input 
+                  type="checkbox" 
+                  v-model="task.completed"
+                  class="mt-1 rounded border-gray-300 dark:border-neutral-800 focus:ring-purple-400 text-purple-600 cursor-pointer" />
+                <div class="flex-1 min-w-0">
+                  <p 
+                    :class="task.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-slate-800 dark:text-gray-200'"
+                    class="text-xs font-semibold leading-snug">
+                    {{ task.label }}
+                  </p>
+                  <span class="text-[9px] text-gray-400 dark:text-gray-500">Target: {{ task.dueDate }}</span>
+                </div>
+                <button 
+                  @click="removeMilestone(task.id)"
+                  class="text-gray-400 hover:text-red-500 transition-colors p-0.5">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-charcoal border border-gray-100 dark:border-neutral-800/80 p-3 rounded-2xl space-y-2">
+              <input 
+                type="text" 
+                placeholder="E.g., Complete Section 4 notes..." 
+                v-model="newMilestoneLabel"
+                class="w-full bg-gray-50 dark:bg-neutral-900 px-3 py-1.5 text-xs rounded-xl focus:outline-none border border-gray-200 dark:border-neutral-800 text-slate-800 dark:text-gray-100" />
+              <button 
+                @click="addMilestone"
+                class="w-full py-1.5 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-semibold hover:opacity-90 transition-all">
+                Add Milestone
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
+
+    createApp({
+      setup() {
+        const activeWorkspace = ref([]);
+        const activePage = ref('dashboard');
+        const darkMode = ref(false);
+        const dragOver = ref(false);
+        const fileInput = ref(null);
+        
+        const activeDocument = ref(null);
+        const chatContextMode = ref('all');
+        const isSearching = ref(false);
+
+        const apiKey = ref(localStorage.getItem('cosmos-api-key') || '');
+        watch(apiKey, (val) => {
+        localStorage.setItem('cosmos-api-key', val);
+        console.log("Key saved to storage:", val); // Check your console (F12) to see if this triggers
+        });
+        const isLiveAPI = computed(() => {
+        return apiKey.value.trim().length > 15; 
+        });
+
+        const searchQuery = ref('');
+        const searchResults = ref([]);
+
+        const handleFileDrop = (e) => {
+          dragOver.value = false;
+          const files = e.dataTransfer.files;
+          processIncomingFiles(files);
+        };
+
+        const handleFileSelect = (e) => {
+          const files = e.target.files;
+          processIncomingFiles(files);
+        };
+
+        const processIncomingFiles = async (files) => {
+          for (let file of files) {
+            const nameLower = file.name.toLowerCase();
+            const url = URL.createObjectURL(file);
+            let extractedText = '';
+
+            if (nameLower.endsWith('.pdf')) {
+               try {
+                 const arrayBuffer = await file.arrayBuffer();
+                 const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                 let text = '';
+                 for(let i=1; i<=Math.min(pdf.numPages, 10); i++) {
+                   const page = await pdf.getPage(i);
+                   const content = await page.getTextContent();
+                   text += content.items.map(item => item.str).join(' ') + '\n';
+                 }
+                 extractedText = text;
+               } catch(e) { 
+                 console.error("PDF extract error", e); 
+                 extractedText = "Could not extract text from PDF."; 
+               }
+            } else if (nameLower.endsWith('.txt')) {
+               extractedText = await file.text();
+            } else {
+               extractedText = "Unsupported file format for direct text extraction in this demo.";
+            }
+
+            const newDoc = {
+              id: `${file.name}-${Math.random().toString(36).substr(2, 4)}`,
+              title: file.name.replace(/\.[^/.]+$/, ""),
+              authors: 'Local Upload',
+              abstract: extractedText.substring(0, 400) + '...',
+              fullText: extractedText,
+              size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+              url: url
+            };
+            activeWorkspace.value.unshift(newDoc);
+          }
+          if (activeWorkspace.value.length > 0 && !activeDocument.value) {
+            activeDocument.value = activeWorkspace.value[0];
+          }
+          nextTick(() => { lucide.createIcons(); });
+        };
+
+        const removeFromWorkspace = (id) => {
+          activeWorkspace.value = activeWorkspace.value.filter(d => d.id !== id);
+          if(activeDocument.value && activeDocument.value.id === id) {
+             activeDocument.value = activeWorkspace.value.length > 0 ? activeWorkspace.value[0] : null;
+          }
+        };
+
+        const isInWorkspace = (id) => {
+          return activeWorkspace.value.some(d => d.id === id);
+        };
+
+        const injectIntoWorkspace = (result) => {
+          if (!isInWorkspace(result.id)) {
+            const newDoc = {
+              id: result.id,
+              title: result.title,
+              authors: result.authors,
+              abstract: result.abstract,
+              fullText: result.abstract,
+              size: 'External link',
+              url: result.url
+            };
+            activeWorkspace.value.unshift(newDoc);
+            
+            if (!activeDocument.value) {
+              activeDocument.value = newDoc;
+            }
+          }
+          nextTick(() => { lucide.createIcons(); });
+        };
+
+        const performSearch = async () => {
+  if (!searchQuery.value.trim()) return;
+  isSearching.value = true;
+  searchResults.value = [];
+
+  try {
+    const q = encodeURIComponent(searchQuery.value);
+    const res = await fetch(`https://export.arxiv.org/api/query?search_query=all:${q}&start=0&max_results=5`);
+    
+    if (!res.ok) throw new Error("Network response was not ok");
+    
+    const str = await res.text();
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(str, "text/xml");
+    const entries = xmlDoc.getElementsByTagName("entry");
+
+    const results = [];
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      results.push({
+        id: entry.getElementsByTagName("id")[0].textContent.split('/').pop(),
+        title: entry.getElementsByTagName("title")[0].textContent.trim(),
+        authors: Array.from(entry.getElementsByTagName("author")).map(a => a.getElementsByTagName("name")[0].textContent).join(', '),
+        abstract: entry.getElementsByTagName("summary")[0].textContent.trim(),
+        date: entry.getElementsByTagName("published")[0].textContent.split('T')[0],
+        url: entry.getElementsByTagName("id")[0].textContent
+      });
+    }
+    searchResults.value = results;
+  } catch (e) {
+    console.error("Search failed:", e);
+    // Silent fail or set an error state
+  } finally {
+    isSearching.value = false;
+    // Ensure icons render after DOM update
+    nextTick(() => { lucide.createIcons(); });
+  }
+};
+
+        const triggerChime = () => {
+          try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContext();
+            
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.value = 880; 
+            gain1.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'triangle';
+            osc2.frequency.value = 1320; 
+            gain2.gain.setValueAtTime(0.1, ctx.currentTime + 0.15);
+            gain2.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.5);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+
+            osc1.start();
+            osc2.start();
+            osc1.stop(ctx.currentTime + 1.6);
+            osc2.stop(ctx.currentTime + 1.8);
+          } catch (e) {
+            console.warn("Audio skipped.", e);
+          }
+        };
+
+        const timerMinutes = ref(25);
+        const timerSeconds = ref(0);
+        const timerActive = ref(false);
+        const timerMode = ref('work');
+        let timerInterval = null;
+
+        const timerTotalSeconds = computed(() => {
+          if (timerMode.value === 'work') return 25 * 60;
+          if (timerMode.value === 'short') return 5 * 60;
+          return 15 * 60;
+        });
+
+        const formattedTime = computed(() => {
+          const m = String(timerMinutes.value).padStart(2, '0');
+          const s = String(timerSeconds.value).padStart(2, '0');
+          return `${m}:${s}`;
+        });
+
+        const timerDashoffset = computed(() => {
+          const totalSecs = timerTotalSeconds.value;
+          const currentSecs = (timerMinutes.value * 60) + timerSeconds.value;
+          const percent = currentSecs / totalSecs;
+          return 402 * (1 - percent);
+        });
+
+        const timerProgressColor = computed(() => {
+          if (timerMode.value === 'work') return '#fddcc5'; 
+          if (timerMode.value === 'short') return '#eadce4'; 
+          return '#badbe5'; 
+        });
+
+        const setTimerPreset = (mode) => {
+          timerActive.value = false;
+          if (timerInterval) clearInterval(timerInterval);
+          timerMode.value = mode;
+          if (mode === 'work') {
+            timerMinutes.value = 25;
+          } else if (mode === 'short') {
+            timerMinutes.value = 5;
+          } else {
+            timerMinutes.value = 15;
+          }
+          timerSeconds.value = 0;
+        };
+
+        const toggleTimer = () => {
+          if (timerActive.value) {
+            timerActive.value = false;
+            clearInterval(timerInterval);
+          } else {
+            timerActive.value = true;
+            timerInterval = setInterval(() => {
+              if (timerSeconds.value === 0) {
+                if (timerMinutes.value === 0) {
+                  clearInterval(timerInterval);
+                  timerActive.value = false;
+                  triggerChime();
+                  setTimerPreset('work');
+                } else {
+                  timerMinutes.value--;
+                  timerSeconds.value = 59;
+                }
+              } else {
+                timerSeconds.value--;
+              }
+            }, 1000);
+          }
+          nextTick(() => { lucide.createIcons(); });
+        };
+
+        const resetTimer = () => {
+          setTimerPreset(timerMode.value);
+          nextTick(() => { lucide.createIcons(); });
+        };
+
+        const mindmapCoreHub = ref('Transformer Ecosystem');
+        const centerNodeX = ref(250);
+        const centerNodeY = ref(180);
+        const mindmapNodes = ref([
+          { id: 'MM-1', label: 'Self-Attention Layer', x: 100, y: 70, theme: 'lavender' },
+          { id: 'MM-2', label: 'Position Embeddings', x: 400, y: 80, theme: 'mist' }
+        ]);
+        const newConceptLabel = ref('');
+
+        const addMindmapNode = () => {
+          if (!newConceptLabel.value.trim()) return;
+          const nodeID = `MM-${mindmapNodes.value.length + 1}`;
+          const angle = Math.random() * Math.PI * 2;
+          const distance = 120 + Math.random() * 50;
+          const newX = centerNodeX.value + Math.cos(angle) * distance;
+          const newY = centerNodeY.value + Math.sin(angle) * distance;
+          
+          mindmapNodes.value.push({
+            id: nodeID,
+            label: newConceptLabel.value,
+            x: Math.max(50, Math.min(450, newX)),
+            y: Math.max(50, Math.min(320, newY)),
+            theme: Math.random() > 0.5 ? 'lavender' : 'mist'
+          });
+          newConceptLabel.value = '';
+          nextTick(() => { lucide.createIcons(); });
+        };
+
+        const pruneMindmapNode = (id) => {
+          mindmapNodes.value = mindmapNodes.value.filter(n => n.id !== id);
+        };
+
+        const milestones = ref([]);
+        const newMilestoneLabel = ref('');
+
+        const addMilestone = () => {
+          if (!newMilestoneLabel.value.trim()) return;
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const dateString = tomorrow.toISOString().split('T')[0];
+          
+          milestones.value.push({
+            id: Date.now(),
+            label: newMilestoneLabel.value,
+            completed: false,
+            dueDate: dateString
+          });
+          newMilestoneLabel.value = '';
+          nextTick(() => { lucide.createIcons(); });
+        };
+
+        const removeMilestone = (id) => {
+          milestones.value = milestones.value.filter(m => m.id !== id);
+        };
+
+        const userMessage = ref('');
+        const isBotThinking = ref(false);
+        const chatContainer = ref(null);
+        const chatMessages = ref([{
+          id: 1,
+          role: 'bot',
+          text: 'CosmosNote initialized. I am arxivLLM. Upload files or input queries. If outside the workspace scope, I will answer using general knowledge.',
+          citations: []
+        }]);
+
+        const suggestedPrompts = [
+          'Detail the primary architectural constraints of Self-Attention.',
+          'Synthesize comparative parameters for NLP and CV transformers.',
+        ];
+
+        const applySuggestedPrompt = (prompt) => {
+          userMessage.value = prompt;
+          sendChatMessage();
+        };
+
+        const clearChat = () => {
+          chatMessages.value = [{
+            id: Date.now(),
+            role: 'bot',
+            text: 'Conversation history reset. System context remains locked to active paper modules.',
+            citations: []
+          }];
+        };
+
+        const scrollToBottom = () => {
+          nextTick(() => {
+            if (chatContainer.value) {
+              chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+            }
+          });
+        };
+
+        const sendChatMessage = async () => {
+          if (!userMessage.value.trim()) return;
+          const text = userMessage.value;
+          userMessage.value = '';
+
+          chatMessages.value.push({
+            id: Date.now(),
+            role: 'user',
+            text: text
+          });
+          scrollToBottom();
+
+          isBotThinking.value = true;
+
+          if (isLiveAPI.value) {
+            try {
+              const result = await makeLiveGeminiCall(text);
+              chatMessages.value.push({
+                id: Date.now(),
+                role: 'bot',
+                text: result.text,
+                citations: result.citations,
+                webBadges: result.webBadges
+              });
+            } catch (err) {
+              chatMessages.value.push({
+                id: Date.now(),
+                role: 'bot',
+                text: `Live API Error: ${err.message}. Using fallback.`,
+                citations: []
+              });
+            }
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            chatMessages.value.push({
+              id: Date.now(),
+              role: 'bot',
+              text: `I am arxivLLM. You asked: "${text}". Since you are in sandbox mode, I do not have a live connection to parse the full context right now. Please enter a live API key above to fully interact with the workspace and general knowledge base.`,
+              citations: []
+            });
+          }
+
+          isBotThinking.value = false;
+          scrollToBottom();
+          nextTick(() => { lucide.createIcons(); });
+        };
+
+        const makeLiveGeminiCall = async (queryText) => {
+          let contextDocs = activeWorkspace.value;
+          if (chatContextMode.value !== 'all') {
+            contextDocs = contextDocs.filter(d => d.id === chatContextMode.value);
+          }
+
+          const docsCombinedContext = contextDocs.map(d => {
+            const content = d.fullText ? d.fullText.substring(0, 15000) : "No text extracted.";
+            return `[DOCUMENT ID: ${d.id}, TITLE: ${d.title}, TEXT: ${content}]`;
+          }).join('\n\n');
+
+          const systemPrompt = `You are arxivLLM, a master in explaining research papers. You explain complex concepts in simple terms or adjust to the user prompt. You are agentic. Your primary task is to answer based on the provided document workspace. However, if the user asks a general question or something unrelated to the documents, use your general knowledge to answer them anyway. Keep your tone direct and practical. Avoid slogans and motivational talk.
+
+Active Workspace Documents:
+${docsCombinedContext || 'No documents available in the current context.'}
+
+Rules:
+1. Answer based strictly on the documents if relevant. Provide citations if doing so.
+2. If the query is unrelated, answer accurately using your general knowledge as arxivLLM.
+3. Keep the tone practical, realistic, direct, and academic.
+4. Do NOT include system metadata variables directly in the raw response text.`;
+
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.value.trim()}`;
+          const payload = {
+            contents: [{ parts: [{ text: queryText }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+          };
+
+          let attempts = 5;
+          let delay = 1000;
+          let response = null;
+
+          for (let i = 0; i < attempts; i++) {
+            try {
+              const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              if (!res.ok) throw new Error(`API Status Code: ${res.status}`);
+              response = await res.json();
+              break;
+            } catch (err) {
+              if (i === attempts - 1) throw err;
+              await new Promise(resolve => setTimeout(resolve, delay));
+              delay *= 2;
+            }
+          }
+
+          const responseText = response?.candidates?.[0]?.content?.parts?.[0]?.text || "The model returned an empty response.";
+          
+          const generatedCitations = [];
+          activeWorkspace.value.forEach(d => {
+            if (responseText.toLowerCase().includes(d.title.split(' ')[0].toLowerCase())) {
+              generatedCitations.push({ ref: d.id });
+            }
+          });
+
+          return {
+            text: responseText,
+            citations: generatedCitations.length > 0 ? generatedCitations : [],
+            webBadges: []
+          };
+        };
+
+        const toggleDarkMode = () => {
+          darkMode.value = !darkMode.value;
+          if (darkMode.value) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+          nextTick(() => { lucide.createIcons(); });
+        };
+
+        watch(activePage, () => {
+          nextTick(() => { lucide.createIcons(); });
+        });
+
+        onMounted(() => {
+          lucide.createIcons();
+        });
+
+        return {
+          activePage,
+          activeWorkspace,
+          activeDocument,
+          chatContextMode,
+          darkMode,
+          apiKey,
+          isLiveAPI,
+          searchQuery,
+          searchResults,
+          isSearching,
+          dragOver,
+          fileInput,
+          removeFromWorkspace,
+          handleFileDrop,
+          handleFileSelect,
+          injectIntoWorkspace,
+          isInWorkspace,
+          performSearch,
+          timerMinutes,
+          timerSeconds,
+          timerActive,
+          timerMode,
+          formattedTime,
+          timerDashoffset,
+          timerProgressColor,
+          setTimerPreset,
+          toggleTimer,
+          resetTimer,
+          mindmapCoreHub,
+          centerNodeX,
+          centerNodeY,
+          mindmapNodes,
+          newConceptLabel,
+          addMindmapNode,
+          pruneMindmapNode,
+          milestones,
+          newMilestoneLabel,
+          addMilestone,
+          removeMilestone,
+          userMessage,
+          isBotThinking,
+          chatMessages,
+          chatContainer,
+          suggestedPrompts,
+          applySuggestedPrompt,
+          sendChatMessage,
+          clearChat,
+          toggleDarkMode
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
